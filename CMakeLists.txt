@@ -9,7 +9,7 @@ set(CMAKE_CXX_FLAGS "-std=c++17 -fno-omit-frame-pointer -ggdb3")
 # set(BOOST_ROOT "/home/ov699/opt/")
 find_package(Boost 1.67.0 COMPONENTS unit_test_framework REQUIRED)
 
-include_directories(src)
+include_directories(src ${Boost_INCLUDE_DIR})
 
 add_executable(level1 src/level1.cc)
 target_compile_features(level1 PRIVATE cxx_std_17)
@@ -28,3 +28,6 @@ target_compile_features(level5 PRIVATE cxx_std_17)
 
 add_executable(level6 src/level6.cc)
 target_compile_features(level6 PRIVATE cxx_std_17)
+
+add_executable(level7 src/level7.cc)
+target_compile_features(level7 PRIVATE cxx_std_17)
