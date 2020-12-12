@@ -37,7 +37,7 @@ void dump(Mapa const& m) {
 }
 
 
-Mapa step(Mapa const& m)
+Mapa step_1(Mapa const& m)
 {
     const unsigned rows = m.size();
     const unsigned cols = m.front().size();
@@ -110,8 +110,6 @@ Mapa step(Mapa const& m)
     for (unsigned row = 0; row < rows; ++row) {
         for (unsigned col = 0; col < cols; ++col) {
             const char c = m.at(row).at(col);
-            result[row][col] = c;
-
             if (c == '.') { continue; }
 
             const unsigned cnt = around(row, col);
@@ -125,6 +123,80 @@ Mapa step(Mapa const& m)
     return result;
 }
 
+Mapa step_2(Mapa const& m)
+{
+    const unsigned rows = m.size();
+    const unsigned cols = m.front().size();
+
+    auto ray = [&m, &rows, &cols](int row, int col, int const dir_x, int const dir_y) -> unsigned {
+        std::map<unsigned char, unsigned> counts;
+
+        for(;;) {
+            row += dir_y;
+            col += dir_x;
+
+            if (row < 0 || row == rows || col < 0 || col == cols) {
+                break;
+            }
+            const auto c = m.at(row).at(col);
+            if (c == '#' || c == 'L') {
+                counts[m.at(row).at(col)] += 1;
+                break;
+            }
+        }
+
+        return counts['#'];
+    };
+
+    Mapa result = m;
+    for (int row = 0; row < rows; ++row) {
+        for (int col = 0; col < cols; ++col) {
+            const char c = m.at(row).at(col);
+            if (c == '.') { continue; }
+
+            const unsigned cnt =
+                ray(row, col,  0, +1) +
+                ray(row, col,  0, -1) +
+                ray(row, col, +1,  0) +
+                ray(row, col, -1,  0) +
+                ray(row, col, +1, +1) +
+                ray(row, col, +1, -1) +
+                ray(row, col, -1, +1) +
+                ray(row, col, -1, -1);
+
+            if (c == 'L' && cnt == 0) {
+                result[row][col] = '#';
+            } else if (c == '#' && cnt >= 5) {
+                result[row][col] = 'L';
+            }
+        }
+    }
+    return result;
+}
+
+
+
+void part_1(Mapa m1) {
+    std::set<size_t> h;
+    for (;;) {
+        if (!h.insert(hash(m1)).second) { break; }
+        m1 = step_1(m1);
+    }
+
+    std::cout << "Iterations=" << h.size() << ", occupied=" << count_seats(m1, '#') << "\n";
+}
+
+
+void part_2(Mapa m1) {
+    std::set<size_t> h;
+    for (;;) {
+        if (!h.insert(hash(m1)).second) { break; }
+        m1 = step_2(m1);
+    }
+
+    std::cout << "Iterations=" << h.size() << ", occupied=" << count_seats(m1, '#') << "\n";
+
+}
 
 int main(int argc, char* argv[]) {
     Mapa m1;
@@ -134,16 +206,9 @@ int main(int argc, char* argv[]) {
         m1.push_back(line);
     }
 
-    std::set<size_t> h;
-    for (;;) {
-        if (!h.insert(hash(m1)).second) {
-            break;
-        }
-        auto m2 = step(m1);
-        std::swap(m1, m2);
-    }
+    part_1(m1);
 
-    std::cout << "Iterations=" << h.size() << ", occupied=" << count_seats(m1, '#') << "\n";
+    part_2(m1);
 
     return 0;
 }
