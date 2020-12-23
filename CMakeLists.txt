@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.11)
 project(AOC2020)
 
-set(CMAKE_CXX_FLAGS "-Wall -std=c++17 -fno-omit-frame-pointer -ggdb3 -O2")
+set(CMAKE_CXX_FLAGS "-Wall -std=c++17 -fno-omit-frame-pointer -ggdb3 -O3")
 
 # find_package(PkgConfig)
 # pkg_check_modules(PC_RapidJSON QUIET RapidJSON)
@@ -80,3 +80,6 @@ target_compile_features(level21 PRIVATE cxx_std_17)
 
 add_executable(level22 src/level22.cc)
 target_compile_features(level22 PRIVATE cxx_std_17)
+
+add_executable(level23 src/level23.cc)
+target_compile_features(level23 PRIVATE cxx_std_17)
