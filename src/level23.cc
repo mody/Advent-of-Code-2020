@@ -1,15 +1,12 @@
 #include <algorithm>
-#include <array>
 #include <cstring>
 #include <deque>
 #include <iostream>
-#include <numeric>
 #include <string>
-#include <execution>
 #include <vector>
 
 using Board = std::deque<long>;
-using Buffer = std::array<long, 3>;
+using CBuffer = std::vector<long>;
 
 constexpr long MAX_TURNS_1 = 100;
 constexpr long MAX_TURNS_2 = 10000000;
@@ -24,99 +21,111 @@ void dump(T const& b, const std::string& separator = ",") {
     std::cout << "\n";
 }
 
-void replace3(Board& b, Board::iterator dst) {
-    auto dist = std::distance(b.begin(), dst) - 2;
-
-    auto src = std::next(b.begin());
-    Board a(src, std::next(src, 3));
-
-    b.erase(src, std::next(b.begin(), 4));
-    b.insert(std::next(b.begin(), dist), a.begin(), a.end());
+void dumpc(CBuffer const& b, const std::string& separator = ",") {
+    auto first = b.at(0);
+    std::cout << first << separator;
+    for (auto next = b.at(first); next != first; next = b[next]) {
+        std::cout << next << separator;
+    }
+    std::cout << "\n";
 }
 
-void rotate1(Board& b) {
-    auto i = b.front();
-    b.pop_front();
-    b.push_back(i);
+long make_move(CBuffer& cb, long current, long min_value, long max_value) {
+    const long cut_begin = current;
+    const long b1 = cb.at(cut_begin);
+    const long b2 = cb.at(b1);
+    const long b3 = cb.at(b2);
+    long cut_end = cb.at(b3);
+
+    cb.at(cut_begin) = cut_end;
+
+    long insert_point = cut_begin;
+    for(;;) {
+        --insert_point;
+        if (insert_point < min_value) {
+            insert_point = max_value;
+        }
+        if (insert_point == b1 || insert_point == b2 || insert_point == b3) {
+            continue;
+        }
+        break;
+    }
+
+    cut_end = cb.at(insert_point);
+    cb.at(insert_point) = b1;
+    cb.at(b3) = cut_end;
+
+    return cb.at(current);
 }
 
 
-void part_1(Board b) {
+void part_1_fast(Board b) {
     const long max_value = *std::max_element(b.cbegin(), b.cend());
     const long min_value = *std::min_element(b.cbegin(), b.cend());
 
-    Board::iterator dst;
-    for ( unsigned turn = 0; turn < MAX_TURNS_1; ++turn ) {
-        long i = b.front();
-        do {
-            --i;
-            if ( i < min_value ) {
-                i = max_value;
-            }
-            if (i == b.at(1) || i == b.at(2) || i == b.at(3)) {
-                dst = b.end();
-            } else {
-                dst = std::find(std::next(b.begin(), 4), b.end(), i);
-            }
-        } while(dst == b.end());
-        replace3(b, dst);
-        std::rotate(b.begin(), std::next(b.begin()), b.end());
+    CBuffer cbuf;
+    cbuf.resize(max_value + 1);
+
+    long first = b.front();
+    long last = b.front();
+    b.pop_front();
+    cbuf.at(0) = last;
+
+    for (auto const& val : b) {
+        cbuf.at(last) = val;
+        last = val;
+    }
+    cbuf.at(last) = first;
+
+    long current = first;
+    for (unsigned turn = 0; turn < MAX_TURNS_1; ++turn) {
+        current = make_move(cbuf, current, min_value, max_value);
+        cbuf.at(0) = current;
     }
 
-    std::rotate(b.begin(), std::find(b.begin(), b.end(), 1), b.end());
-    b.erase(b.begin());
-
+    cbuf.at(0) = cbuf.at(1);
     std::cout << "1 Result=";
-    dump(b, "");
+    dumpc(cbuf, "");
 }
 
-
-void part_2(Board b) {
+void part_2_fast(Board b) {
+    const long max_value = *std::max_element(b.cbegin(), b.cend());
     const long min_value = *std::min_element(b.cbegin(), b.cend());
-    long max_value = *std::max_element(b.cbegin(), b.cend());
 
-    for ( long i = max_value + 1; i <= MAX_VALUE_2; ++i ) {
-        b.push_back(i);
+    CBuffer cbuf;
+    cbuf.resize(MAX_VALUE_2 + 1);
+
+    long first = b.front();
+    long last = b.front();
+    b.pop_front();
+    cbuf.at(0) = last;
+
+    for (auto const& val : b) {
+        cbuf.at(last) = val;
+        last = val;
     }
-    max_value = MAX_VALUE_2 + 1;
-
-    std::cout << "Part 2 start\n";
-    Board::iterator dst;
-    for ( long turn = 0; turn < MAX_TURNS_2; ++turn ) {
-        long i = b.front();
-        do {
-            --i;
-            if ( i < min_value ) {
-                i = max_value;
-            }
-            if (i == b.at(1) || i == b.at(2) || i == b.at(3)) {
-                dst = b.end();
-            } else if (i == b.front()) {
-                dst = b.begin();
-                break;
-            } else {
-                dst = std::find(std::execution::par, std::next(b.begin(), 4), b.end(), i);
-            }
-        } while(dst == b.end());
-
-        replace3(b, dst);
-        rotate1(b);
+    for (long val = max_value + 1; val <= MAX_VALUE_2; ++val) {
+        cbuf.at(last) = val;
+        last = val;
     }
-    std::cout << "\n";
+    cbuf.at(last) = first;
 
-    std::rotate(b.begin(), std::find(b.begin(), b.end(), 1), b.end());
+    long current = first;
+    for (long turn = 0; turn < MAX_TURNS_2; ++turn) {
+        current = make_move(cbuf, current, min_value, MAX_VALUE_2);
+    }
 
-    std::cout << "2 Result=" << (b[1]*b[2]) << "\n"
-        << "1: " << b[1] << "\n" << "2: " << b[2] << "\n";
+    long b1 = cbuf.at(1);
+    long b2 = cbuf.at(b1);
+    std::cout << "2 Result=" << b1*b2 << "(" << b1 << ", " << b2 << ")\n";
 }
-
 
 int main() {
-    Board btest{3, 8, 9, 1, 2, 5, 4, 6, 7};
+    // Board btest{3, 8, 9, 1, 2, 5, 4, 6, 7};
     Board b{2, 1, 9, 7, 4, 8, 3, 6, 5};
 
-    part_1(b);
-    part_2(b);
+    part_1_fast(b);
+    part_2_fast(b);
 
     return 0;
 }
