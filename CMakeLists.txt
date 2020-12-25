@@ -86,3 +86,6 @@ target_compile_features(level23 PRIVATE cxx_std_17)
 
 add_executable(level24 src/level24.cc)
 target_compile_features(level24 PRIVATE cxx_std_17)
+
+add_executable(level25 src/level25.cc)
+target_compile_features(level25 PRIVATE cxx_std_17)
